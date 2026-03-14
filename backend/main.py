@@ -9,9 +9,14 @@ app = FastAPI(
 
 # ---------------- CORS ---------------- #
 
+origins = [
+    "http://localhost:3000",  # local development
+    "https://ai-interview-coach-brown-one.vercel.app"  # deployed frontend
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,46 +39,15 @@ def health_check():
 
 # ---------------- ROUTES ---------------- #
 
-# Existing routers
 from app.api.v1 import auth, resume, interview
 from app.api.v1 import code
-from app.api.v1 import admin   # NEW ADMIN ROUTER
+from app.api.v1 import admin
 
-# Auth routes
-app.include_router(
-    auth.router,
-    prefix="/api/v1/auth",
-    tags=["Auth"]
-)
-
-# Resume routes
-app.include_router(
-    resume.router,
-    prefix="/api/v1/resumes",
-    tags=["Resumes"]
-)
-
-# Interview routes
-app.include_router(
-    interview.router,
-    prefix="/api/v1/interviews",
-    tags=["Interviews"]
-)
-
-# Code evaluation routes
-app.include_router(
-    code.router,
-    prefix="/api/v1/code",
-    tags=["Code Evaluation"]
-)
-
-# ---------------- ADMIN ROUTES ---------------- #
-
-app.include_router(
-    admin.router,
-    prefix="/api/v1/admin",
-    tags=["Admin"]
-)
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(resume.router, prefix="/api/v1/resumes", tags=["Resumes"])
+app.include_router(interview.router, prefix="/api/v1/interviews", tags=["Interviews"])
+app.include_router(code.router, prefix="/api/v1/code", tags=["Code Evaluation"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 
 # ---------------- RUN SERVER ---------------- #
 
