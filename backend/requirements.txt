@@ -10,3 +10,4 @@ passlib[bcrypt]==1.7.4
 pdfplumber
 email-validator
 python-multipart
+groq
