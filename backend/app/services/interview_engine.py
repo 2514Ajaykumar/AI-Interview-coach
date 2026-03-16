@@ -26,8 +26,8 @@ class InterviewOrchestrator:
         if not role:
             role = repository.create_job_role(role_title)
 
-        role_id = role["id"]
-
+        # role_id = role["id"]
+        role_id = role["id"] if isinstance(role, dict) else role.id
         interview = repository.create_interview(user_id, role_id)
 
         resumes = repository.get_resumes_by_user(user_id)
@@ -35,11 +35,23 @@ class InterviewOrchestrator:
         resume_context = {}
 
         if resumes:
+            # latest_resume = resumes[0]
+
+            # resume_context = {
+            #     "skills": latest_resume.get("parsed_skills", []),
+            #     "projects": latest_resume.get("parsed_projects", [])
+            # }
             latest_resume = resumes[0]
 
+        if isinstance(latest_resume, dict):
             resume_context = {
                 "skills": latest_resume.get("parsed_skills", []),
                 "projects": latest_resume.get("parsed_projects", [])
+            }
+        else:
+            resume_context = {
+                "skills": getattr(latest_resume, "parsed_skills", []),
+                "projects": getattr(latest_resume, "parsed_projects", [])
             }
 
         question = self.generator.generate_first_question(
@@ -47,7 +59,8 @@ class InterviewOrchestrator:
             resume_context
         )
 
-        interview_id = interview.id
+        # interview_id = interview.id
+        interview_id = interview["id"] if isinstance(interview, dict) else interview.id
 
         # Session state
         self.history[interview_id] = []
@@ -61,6 +74,53 @@ class InterviewOrchestrator:
             "question_limit": question_limit,
             "difficulty": difficulty
         }
+    # def start_interview_session(self, user_id: int, role_title: str,
+    #                         difficulty: str = "Beginner",
+    #                         question_limit: int = 10):
+
+    #     role = repository.get_job_role_by_title(role_title)
+
+    #     if not role:
+    #         role = repository.create_job_role(role_title)
+
+    #     role_id = role["id"] if isinstance(role, dict) else role.id
+
+    #     interview = repository.create_interview(user_id, role_id)
+
+    #     if isinstance(interview, dict):
+    #         interview_id = interview.get("id")
+    #     else:
+    #         interview_id = interview.id
+
+    #     resumes = repository.get_resumes_by_user(user_id)
+
+    #     resume_context = {}
+
+    #     if resumes:
+    #         latest_resume = resumes[0]
+
+    #     resume_context = {
+    #         "skills": latest_resume.get("parsed_skills", []),
+    #         "projects": latest_resume.get("parsed_projects", [])
+    #     }
+
+    #     question = self.generator.generate_first_question(
+    #         role_title,
+    #         resume_context
+    #     )
+
+    #     # Session state
+    #     self.history[interview_id] = []
+    #     self.question_limits[interview_id] = question_limit
+    #     self.question_counts[interview_id] = 1
+    #     self.difficulty_levels[interview_id] = difficulty
+
+    #     return {
+    #         "interview": interview,
+    #         "question": question,
+    #         "question_limit": question_limit,
+    #         "difficulty": difficulty
+    #     }
 
     # ---------------- NEXT QUESTION ---------------- #
 

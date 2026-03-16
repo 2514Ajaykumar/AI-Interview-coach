@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { uploadResume, startInterview, getInterviewHistory } from "@/services/api";
+import { uploadResume, getInterviewHistory } from "@/services/api";
 import { useRouter } from "next/navigation";
 import {
   UploadCloud,
@@ -19,6 +19,16 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+type ParsedResume = {
+  skills?: string[];
+  projects?: string[];
+};
+type Interview = {
+  interview_id: number;
+  role_title?: string;
+  score?: number;
+  date: string;
+};
 
 function StatCard({
   icon: Icon,
@@ -53,12 +63,11 @@ export default function DashboardPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [parsedData, setParsedData] = useState<any>(null);
-
+  const [parsedData, setParsedData] = useState<ParsedResume | null>(null);
   const [role, setRole] = useState("Software Engineer");
   const [starting, setStarting] = useState(false);
 
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Interview[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
 
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -114,7 +123,7 @@ export default function DashboardPage() {
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || uploading) return;
 
     setError(null);
     setUploading(true);
@@ -130,24 +139,48 @@ export default function DashboardPage() {
       const res = await uploadResume(parseInt(userId), file);
       setParsedData(res.parsed_data);
 
-    } catch (err: any) {
-      setError(err.message || "Failed to upload resume");
-    } finally {
+    } catch (err: unknown) {
+  if (err instanceof Error) {
+    setError(err.message);
+  } else {
+    setError("Failed to upload resume");
+  }
+} finally {
       setUploading(false);
     }
   };
 
+  // const handleStartInterview = () => {
+  //   try {
+  //     localStorage.setItem("selected_role", role);
+  //     router.push("/interview/setup");
+  //   } catch (err: any) {
+  //     setError(err.message || "Failed to start interview");
+  //   }
+  // };
   const handleStartInterview = () => {
-    try {
-      localStorage.setItem("selected_role", role);
-      router.push("/interview/setup");
-    } catch (err: any) {
-      setError(err.message || "Failed to start interview");
+  try {
+    if (!role) {
+      setError("Please enter a role before starting.");
+      return;
     }
-  };
+
+    localStorage.setItem("selected_role", role);
+    router.push("/interview/setup");
+
+  } catch (err: unknown) {
+  if (err instanceof Error) {
+    setError(err.message);
+  } else {
+    setError("Failed to start interview");
+  }
+}
+};
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
     router.replace("/login");
   };
 
@@ -289,7 +322,7 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   </div>
-                  {parsedData.projects?.length > 0 && (
+                  {parsedData?.projects && parsedData.projects.length > 0 && (
                     <div className="mt-4">
                       <h4 className="text-sm font-medium text-slate-400 mb-2 uppercase tracking-wider">Experience & Projects</h4>
                       <ul className="space-y-2">

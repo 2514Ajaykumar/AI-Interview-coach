@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
+
 from app.services.interview_engine import InterviewOrchestrator
 from app.database import repository
 
@@ -35,7 +36,7 @@ class NextQuestionRequest(BaseModel):
 # -------- START INTERVIEW -------- #
 
 @router.post("/start")
-async def start_interview(payload: StartInterviewRequest):
+async def start_interview(payload: StartInterviewRequest) -> Dict[str, Any]:
     try:
         result = orchestrator.start_interview_session(
             user_id=payload.user_id,
@@ -43,39 +44,54 @@ async def start_interview(payload: StartInterviewRequest):
             difficulty=payload.difficulty,
             question_limit=payload.question_limit
         )
+
         return result
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to start interview: {str(e)}"
+        )
 
 
 # -------- NEXT QUESTION -------- #
 
 @router.post("/next_question")
-async def next_question(payload: NextQuestionRequest):
+async def next_question(payload: NextQuestionRequest) -> Dict[str, Any]:
     try:
         result = orchestrator.next_question(
             interview_id=payload.interview_id,
             previous_question=payload.question,
             answer=payload.answer
         )
+
         return result
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate next question: {str(e)}"
+        )
 
 
 # -------- SUBMIT ANSWER -------- #
 
 @router.post("/submit_answer")
-async def submit_answer(payload: SubmitAnswerRequest):
+async def submit_answer(payload: SubmitAnswerRequest) -> Dict[str, Any]:
     try:
         evaluation = orchestrator.evaluate_answer(
             interview_id=payload.interview_id,
             question_id=payload.question_id,
             answer_text=payload.answer_text
         )
+
         return evaluation
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Answer evaluation failed: {str(e)}"
+        )
 
 
 # -------- HISTORY -------- #
@@ -83,9 +99,14 @@ async def submit_answer(payload: SubmitAnswerRequest):
 @router.get("/history/{user_id}")
 async def get_history(user_id: int):
     try:
-        return repository.get_interview_history(user_id)
+        history = repository.get_interview_history(user_id)
+        return history
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch interview history: {str(e)}"
+        )
 
 
 # -------- COMPLETE INTERVIEW -------- #
@@ -93,9 +114,14 @@ async def get_history(user_id: int):
 @router.post("/{interview_id}/complete")
 async def complete_interview(interview_id: int):
     try:
-        return orchestrator.complete_session(interview_id)
+        result = orchestrator.complete_session(interview_id)
+        return result
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to complete interview: {str(e)}"
+        )
 
 
 # -------- INTERVIEW REPORT -------- #
@@ -110,5 +136,10 @@ async def get_report(interview_id: int):
 
         return report
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate interview report: {str(e)}"
+        )

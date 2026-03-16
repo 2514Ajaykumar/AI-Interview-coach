@@ -21,14 +21,23 @@ import {
 
 export default function LandingPage() {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      setIsLoggedIn(!!token);
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("user_id");
+
+    if (!token || !userId) {
+      setIsLoggedIn(false);
+    } else {
+      setIsLoggedIn(true);
     }
-  }, []);
+  }
+}, []);
+if (isLoggedIn === null) {
+    return null;
+  }
 
   const handleStartInterview = () => {
     if (isLoggedIn) {
